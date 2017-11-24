@@ -1,0 +1,167 @@
+diff --git a/InitialiseSGC2.praat b/InitialiseSGC2.praat
+index 9cda8d4..a0eec69 100644
+--- a/InitialiseSGC2.praat
++++ b/InitialiseSGC2.praat
+@@ -45,7 +45,7 @@ viewportMargin = 5
+ yWordlist = 11
+ yFeedback = yWordlist + 5
+ yPinyin = yFeedback + 10
+-yContour = yPinyin + 15
++yContour = yPinyin + 10
+ wipeContourArea$ = "demo Paint rectangle... White 20 80 'yContour' 100"
+ wipePinyinArea$ = "demo Paint rectangle... White 20 80 'yPinyin' 'yContour'"
+ wipeFeedbackArea$ = "demo Paint rectangle... White 0 100 'yFeedback' 'yPinyin'"
+@@ -171,6 +171,10 @@ endif
+ sgc2.synthesizer = -1
+ sgc.alignedTextGrid = -1
+ 
++
++call init_LanguageTargets
++call CreatePinyinIPA
++sgc.pinyinIPA = selected("Table")
+ ##############################################################
+ 
+ config.shuffleLists = 1
+@@ -241,7 +245,7 @@ procedure init_window
+ 			if fileReadable(.outputName$)
+ 				sgc.recordedSound = Read from file: .outputName$
+ 				recordedSound$ = selected$("Sound")
+-				call recognizeTone
++				# call recognizeTone
+ 				# See feedback on earlier recorded words
+ 				if fileReadable("'sgc.saveAudio$'/TestSpeakGoodChinese2.txt")
+ 					call write_feedback Feedback
+@@ -280,7 +284,8 @@ procedure init_window
+ 	call Set_Play_Button
+     
+ 	# Draw the contour
+-	call draw_tone_contour
++	# call draw_tone_contour
++	call draw_vowel_target
+ 	# SaveAudio light
+   	call paint_saveAudio_light
+   	# Set play button
+diff --git a/MainPage.praat b/MainPage.praat
+index 48c1ade..7915886 100644
+--- a/MainPage.praat
++++ b/MainPage.praat
+@@ -913,23 +913,25 @@ procedure processMainPageRecord .clickX .clickY .pressed$
+ 		.recordingTime = recordingTime + 1.0*ceiling((count_syllables.number - 2)/2)
+ 	endif
+     call record_sound '.recordingTime'
+-    call recognizeTone
++    #call recognizeTone
+ 	mainPage.play = 0
+ 	call Set_Play_Button
+ 
+     # Wipe screen
+     call wipeArea 'wipeContourArea$'
+    
+-    call draw_tone_contour
++    #call draw_tone_contour
++    call draw_vowel_target
+     # Write text (again)
+     call display_word_list_name
+     call display_text Black
+-	call add_feedback_to_toneevaluation Feedback
+-    call write_feedback Feedback
+-	select Table Feedback
+-	Remove
++	#call add_feedback_to_toneevaluation Feedback
++    #call write_feedback Feedback
++	#select Table Feedback
++	#Remove
+ 	
+ 	# Do not exercise words that are going well (autoSelect)
++	if 0
+     if add_feedback_to_toneevaluation.result > 0
+ 		if config.adaptiveLists > 0 and sgc.failedAttempts < 2
+ 			# Deselect current word
+@@ -943,6 +945,7 @@ procedure processMainPageRecord .clickX .clickY .pressed$
+     else
+ 		sgc.failedAttempts += 1
+     endif
++    endif
+ endproc
+ 
+ 
+@@ -1023,6 +1026,21 @@ procedure draw_tone_contour
+ 
+ endproc
+ 
++procedure draw_vowel_target
++	if sgc.currentWord > 0 and sgc.currentWord <= sgc.numberOfWords
++		.sp$ = "F"
++		if config.register < 250
++			.sp$ = "M"
++		endif
++		@plot_voweltriangle_and_target: sgc.currentWordlist, sgc.currentWord
++		if sgc.recordedSound > 0
++			@drawSourceVowelTarget: 1, sgc.currentWordlist, sgc.currentWord, .sp$, sgc.recordedSound
++		endif
++		call reset_viewport
++	endif
++
++endproc
++
+ procedure recognizeTone
+ 	select sgc.currentWordlist
+ 	if sgc.currentWord > 0 and sgc.currentWord <= sgc.numberOfWords
+@@ -1184,6 +1202,8 @@ endproc
+ 
+ procedure numbers2pinyin .numberstext$
+ 	.intermediatePinyin$ = .numberstext$
++	# Convert uu to v to recover ü later
++	.intermediatePinyin$ = replace_regex$(.intermediatePinyin$, "uu", "v", 0)	
+ 	# Add a `-quote between vowels
+ 	.intermediatePinyin$ = replace_regex$(.intermediatePinyin$, "([aeuiov])([0-9])([aeuiov])", "\1\2'\3", 0)
+ 	# Move numbers to the nucleus vowel
+@@ -1335,3 +1355,9 @@ include ToneProt/HumToneContour.praat
+ include ToneProt/ToneRecognition.praat
+ include ToneProt/ToneScript.praat
+ include ToneProt/ToneRules.praat
++
++# SGCvowel
++include VowelProt/VowelTarget.praat
++include VowelProt/SelectVowels.praat
++include VowelProt/LanguageTargets.praat
++include VowelProt/CreateIPAtargets.praat
+diff --git a/sgc2.praat b/sgc2.praat
+index 4972fb0..4995a02 100644
+--- a/sgc2.praat
++++ b/sgc2.praat
+@@ -47,6 +47,7 @@ config$ = ""
+ recordedSound$ = ""
+ sgc.recordedSound = 0
+ te.recordedPitch = 0
++te.recordedVowel = 0
+ te.buttonPressValue = 0
+ samplingFrequency = 44100
+ recordingTime = 2.5
+@@ -2032,6 +2033,11 @@ procedure clean_up_sound
+         Remove
+ 		te.recordedPitch = 0
+     endif
++    if te.recordedVowel > 0
++        select te.recordedVowel
++        Remove
++		te.recordedVowel = 0
++    endif
+ 	if sgc.alignedTextGrid > 0
+ 		select sgc.alignedTextGrid
+ 		Remove
+diff --git a/tables2scripts.praat b/tables2scripts.praat
+index d281a97..a890869 100644
+--- a/tables2scripts.praat
++++ b/tables2scripts.praat
+@@ -35,6 +35,10 @@ source_directory$ = "wordlists"
+ target_file$ = "CreateWordlists.praat"
+ call tables2scripts "'source_directory$'" 'target_file$'
+ 
++source_directory$ = "VowelProt"
++target_file$ = "VowelProt/CreateIPAtargets.praat"
++call tables2scripts "'source_directory$'" 'target_file$'
++
+ # Definitions
+ procedure tables2scripts .sourceDir$ .targetFile$
+ 	# Iterate over all tables in the directory
