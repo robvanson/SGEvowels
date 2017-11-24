@@ -28,46 +28,6 @@
 #
 vowelTarget.printlog = 1
 
-procedure placeholder
-	# Get word
-	plot_VowelTriangle_and_Target .words .wordNumber
-	# Record sound
-	if .testAudio and index_regex(.audio$, "\.(wav|mp3)$") and fileReadable(.audio$)
-		.sound = Read from file: .audio$
-	else
-		demo Paint circle: "Red", -20, 120, 3
-		demoShow()
-		.sound = Record Sound (fixed time): .input$, 0.99, 0.5, "'.samplingFrequency'", .recordingTime
-		demo Paint circle: "White", -20, 120, 4
-		demoShow()
-	endif
-	.intensity = Get intensity (dB)
-	if .intensity > 50
-		if index(.f1_targets$, ";") <= 0
-			@calculate_targets: .sp$, .word$, .ipa$
-			.f1_targets$ = calculate_targets.f1_targets$
-			.f2_targets$ = calculate_targets.f2_targets$
-			.f3_targets$ = calculate_targets.f3_targets$
-			.gendert$ = .sp$
-		endif
-		@plot_vowels: 1, "Red", .sp$, .sound, .word$, .ipa$, .gendert$, .f1_targets$, .f2_targets$, .f3_targets$
-	endif
-	
-	selectObject: .sound
-	Remove
-	
-	# Ready or not?
-	beginPause: "Do you want to continue?"
-		comment: "Click on ""Record"" and start speaking (or click ""Done"")"
-	.clicked = endPause: "Done", "Record", 2, 1
-	.continue = (.clicked = 2)
-	
-	.wordNumber += 1
-	if .wordNumber > .numWords
-		.wordNumber = 1
-	endif
-endwhile
-
 selectObject: .words
 Remove
 
@@ -108,9 +68,12 @@ procedure drawSourceVowelTarget .plot .wordList .wordNumber .sp$ .sound
 	endif
 	if index(.f1_targets$, ";") <= 0
 		# Guess targets
+		@getTargets: "EN-US", .gendert$, .ipa$
+		.f1_targets$ = getTargets.f1$
 	endif
 	@plot_vowels: .plot, "Red", .sp$, .sound, .word$, .ipa$, .gendert$, .f1_targets$, .f2_targets$, .f3_targets$
 endproc
+
 #####################################################################
 
 procedure extract_first_vowel .ipa_string$
@@ -125,6 +88,42 @@ procedure extract_first_vowel .ipa_string$
 		if .ipa_string$ <> "" and index_regex(.ipa_string$, "['ipavowelsymbols$']") <= 0
 			.ipa_string$ = ""
 		endif
+endproc
+
+procedure getTargets .lang$ .gender$ .ipa_string$
+printline getTargets 1: '.ipa_string$'
+	# Remove non-vowel symbols
+	.vowels$ = replace_regex$(.ipa_string$, "[^'ipavowelsymbols$']+", " ", 0)
+	.vowels$ = replace_regex$(.vowels$, "^[ ]+", "", 0)
+	.vowels$ = replace_regex$(.vowels$, "[ ]+$", "", 0)
+	
+	
+	# Split into individual vowels and clusters
+	.vowels$ = replace_regex$(.vowels$, "(.)", "\1;", 0)
+	.vowels$ = replace_regex$(.vowels$, "[;]+$", "", 0)
+
+printline getTargets 1: '.vowels$'
+
+	# Get targets
+	.f1$ = ""
+	.f2$ = ""
+	.f3$ = ""
+	while .vowels$ <> ""
+		@extract_next_vowel: .vowels$
+		.segment$ = extract_next_vowel.segment$
+		.vowels$ = extract_next_vowel.vowels$
+		
+		if index_regex(ipavowelsymbols$, .segment$)
+			.f1$ = .f1$ + fixed$(languageTargets.phonemes [.lang$, .gender$, .segment$, "F1"],0) + ";"
+			.f2$ = .f2$ + fixed$(languageTargets.phonemes [.lang$, .gender$, .segment$, "F2"],0) + ";"
+			.f3$ = .f3$ + "-" + ";"
+		else
+			.f1$ = .f1$ + ";"
+			.f2$ = .f2$ + ";"
+			.f3$ = .f3$ + ";"
+		endif
+	endwhile
+printline getTargets 3: '.f1$'
 endproc
 
 procedure extract_first_vowelcluster .ipa_string$
@@ -356,12 +355,12 @@ procedure plot_standard_vowel .color$ .sp$ .targets$ .reduction
 		.vowel$ = extract_first_vowel.vowel$
 		.targets$ = extract_first_vowel.ipa_string$
 
-		.f1 = languageTargets.phonemes ["ZH", .sp$, .vowel$, "F1"]
-		.f2 = languageTargets.phonemes ["ZH", .sp$, .vowel$, "F2"]
+		.f1 = languageTargets.phonemes ["EN-US", .sp$, .vowel$, "F1"]
+		.f2 = languageTargets.phonemes ["EN-US", .sp$, .vowel$, "F2"]
 		if .reduction
 			.factor = 0.9^.reduction
-			.f1 = .factor * (.f1 - languageTargets.phonemes ["ZH", .sp$, "ə", "F1"]) + languageTargets.phonemes ["ZH", .sp$, "ə", "F1"]
-			.f2 = .factor * (.f2 - languageTargets.phonemes ["ZH", .sp$, "ə", "F2"]) + languageTargets.phonemes ["ZH", .sp$, "ə", "F2"]
+			.f1 = .factor * (.f1 - languageTargets.phonemes ["EN-US", .sp$, "ə", "F1"]) + languageTargets.phonemes ["EN-US", .sp$, "ə", "F1"]
+			.f2 = .factor * (.f2 - languageTargets.phonemes ["EN-US", .sp$, "ə", "F2"]) + languageTargets.phonemes ["EN-US", .sp$, "ə", "F2"]
 		endif 
 		.i = 1
 		@vowel2point: .sp$, .f1, .f2
@@ -384,14 +383,14 @@ endproc
 # Plot the vowel triangle
 procedure plot_vowel_triangle .sp$
 	# Draw vowel triangle
-	.a_F1 = languageTargets.phonemes ["ZH", .sp$, "a_corner", "F1"]
-	.a_F2 = languageTargets.phonemes ["ZH", .sp$, "a_corner", "F2"]
+	.a_F1 = languageTargets.phonemes ["EN-US", .sp$, "a_corner", "F1"]
+	.a_F2 = languageTargets.phonemes ["EN-US", .sp$, "a_corner", "F2"]
 
-	.i_F1 = languageTargets.phonemes ["ZH", .sp$, "i_corner", "F1"]
-	.i_F2 = languageTargets.phonemes ["ZH", .sp$, "i_corner", "F2"]
+	.i_F1 = languageTargets.phonemes ["EN-US", .sp$, "i_corner", "F1"]
+	.i_F2 = languageTargets.phonemes ["EN-US", .sp$, "i_corner", "F2"]
 
-	.u_F1 = languageTargets.phonemes ["ZH", .sp$, "u_corner", "F1"]
-	.u_F2 = languageTargets.phonemes ["ZH", .sp$, "u_corner", "F2"]
+	.u_F1 = languageTargets.phonemes ["EN-US", .sp$, "u_corner", "F1"]
+	.u_F2 = languageTargets.phonemes ["EN-US", .sp$, "u_corner", "F2"]
 	
 	demo Dashed line
 	# u - i
@@ -437,8 +436,8 @@ endproc
 
 # Vowel Triangle labels
 procedure write_vowel_label .sp$ .phoneme$ .label$
-	.f1 = languageTargets.phonemes ["ZH", .sp$, .phoneme$, "F1"]
-	.f2 = languageTargets.phonemes ["ZH", .sp$, .phoneme$, "F2"]
+	.f1 = languageTargets.phonemes ["EN-US", .sp$, .phoneme$, "F1"]
+	.f2 = languageTargets.phonemes ["EN-US", .sp$, .phoneme$, "F2"]
 	@vowel2point: .sp$, .f1, .f2
 	.x = vowel2point.x
 	.y = vowel2point.y
@@ -470,8 +469,8 @@ procedure calculate_targets .sp$ .word$ .ipa$
 			@extract_first_vowel: .vc$
 			.v$ = extract_first_vowel.vowel$
 			.vc$ = extract_first_vowel.ipa_string$
-			.f1 = languageTargets.phonemes ["ZH", .sp$, .v$, "F1"]
-			.f2 = languageTargets.phonemes ["ZH", .sp$, .v$, "F2"]
+			.f1 = languageTargets.phonemes ["EN-US", .sp$, .v$, "F1"]
+			.f2 = languageTargets.phonemes ["EN-US", .sp$, .v$, "F2"]
 			.f1_targets$ = .f1_targets$ + fixed$(.f1, 0) + ";"
 			.f2_targets$ = .f2_targets$ + fixed$(.f2, 0) + ";"
 		endwhile
@@ -482,6 +481,13 @@ procedure calculate_targets .sp$ .word$ .ipa$
 endproc
 
 # Get next positive value from list "<value>;<value>;..." where " ;" represents a syllable boundary
+procedure extract_next_vowel .vowels$
+printline extract_next_vowel '.vowels$'
+	.segment$ = replace_regex$(.vowels$, "^(.).*$", "\1", 0)
+	.vowels$ = replace_regex$(.vowels$, "^(.)(.*)$", "\2", 0)
+printline extract_next_vowel '.segment$' - '.vowels$'
+endproc
+
 procedure extract_next_target .targets$
 	.value = number(replace_regex$(.targets$, "^([^;]+);.*$", "\1", 0))
 	if .value = undefined
@@ -495,14 +501,14 @@ procedure vowel2point .sp$ .f1 .f2
 	.spt1 = 12*log2(.f1)
 	.spt2 = 12*log2(.f2)
 	
-	.a_St1 = 12*log2(languageTargets.phonemes ["ZH", .sp$, "a_corner", "F1"])
-	.a_St2 = 12*log2(languageTargets.phonemes ["ZH", .sp$, "a_corner", "F2"])
+	.a_St1 = 12*log2(languageTargets.phonemes ["EN-US", .sp$, "a_corner", "F1"])
+	.a_St2 = 12*log2(languageTargets.phonemes ["EN-US", .sp$, "a_corner", "F2"])
 
-	.i_St1 = 12*log2(languageTargets.phonemes ["ZH", .sp$, "i_corner", "F1"])
-	.i_St2 = 12*log2(languageTargets.phonemes ["ZH", .sp$, "i_corner", "F2"])
+	.i_St1 = 12*log2(languageTargets.phonemes ["EN-US", .sp$, "i_corner", "F1"])
+	.i_St2 = 12*log2(languageTargets.phonemes ["EN-US", .sp$, "i_corner", "F2"])
 
-	.u_St1 = 12*log2(languageTargets.phonemes ["ZH", .sp$, "u_corner", "F1"])
-	.u_St2 = 12*log2(languageTargets.phonemes ["ZH", .sp$, "u_corner", "F2"])
+	.u_St1 = 12*log2(languageTargets.phonemes ["EN-US", .sp$, "u_corner", "F1"])
+	.u_St2 = 12*log2(languageTargets.phonemes ["EN-US", .sp$, "u_corner", "F2"])
 	
 	.dist_iu = sqrt((.i_St1 - .u_St1)^2 + (.i_St2 - .u_St2)^2)
 	.theta = arcsin((.u_St1 - .i_St1)/.dist_iu)
@@ -627,7 +633,7 @@ procedure pinyin2ipa .word$
 		if not index_regex(.tmp$, "\d")
 			.tmp$ = ""
 		endif
-		selectObject: sgc.en_usIPA
+		selectObject: sge.en_usIPA
 		.r = Search column: "Num", .syll$
 		if .r > 0
 			.current_ipa$ = Get value: .r, "IPA"

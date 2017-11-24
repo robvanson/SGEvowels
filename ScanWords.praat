@@ -1,15 +1,15 @@
 #!praat
 #
-.sp_default = 1
+.sp_default = 2
 
 # Initialization
 call init_LanguageTargets
-call CreatePinyinIPA
-sgc.en_usIPA = selected("Table") 
+call CreateEN_US_IPA
+sge.en_usIPA = selected("Table") 
 
 form Source directiory
 	sentence Source EN_US_wordlist.tsv
-	choice Speaker_is_a 1
+	choice Speaker_is_a 2
 		option Female
 		option Male
 	boolean Plot 1

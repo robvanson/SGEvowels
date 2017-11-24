@@ -36,7 +36,7 @@ vowelTarget.printlog = 1
 # Initialization
 call init_LanguageTargets
 call CreateEN_US_IPA
-sgc.en_usIPA = selected("Table") 
+sge.en_usIPA = selected("Table") 
 
 # Read wordlist
 .wordList$ = chooseReadFile$: "Select word list"
@@ -132,7 +132,7 @@ while .continue
 	endif
 endwhile
 
-selectObject: .words, sgc.en_usIPA
+selectObject: .words, sge.en_usIPA
 Remove
 
 #####################################################################
