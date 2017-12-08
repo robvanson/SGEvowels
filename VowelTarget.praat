@@ -70,6 +70,7 @@ procedure drawSourceVowelTarget .plot .wordList .wordNumber .sp$ .sound
 		# Guess targets
 		@getTargets: "EN-US", .gendert$, .ipa$
 		.f1_targets$ = getTargets.f1$
+		.f2_targets$ = getTargets.f2$
 	endif
 	@plot_vowels: .plot, "Red", .sp$, .sound, .word$, .ipa$, .gendert$, .f1_targets$, .f2_targets$, .f3_targets$
 endproc
@@ -123,7 +124,7 @@ printline getTargets 1: '.vowels$'
 			.f3$ = .f3$ + ";"
 		endif
 	endwhile
-printline getTargets 3: '.f1$'
+printline getTargets 3: '.f1$', '.f2'
 endproc
 
 procedure extract_first_vowelcluster .ipa_string$
@@ -224,7 +225,11 @@ procedure plot_vowels .plot, .color$ .sp$ .sound .word$ .ipa$ .gendert$ .f1_targ
 	endwhile
 
 	# Get the best trace of targets
-	@dptrack: .numPhonTargets, .numChunks
+	if .numPhonTargets > 0 and .numChunks > 0
+		@dptrack: .numPhonTargets, .numChunks
+	else
+		appendInfoLine: "@dptrack: ",.numPhonTargets, ", ", .numChunks
+	endif
 
 	# Actually plot the vowels
 	.radius = 1
