@@ -930,7 +930,6 @@ procedure dptrack .numPhonTargets .numChunks
 	t_list [.l] = -1
 	
 	# Mean distance
-	if 0
 	.lastSyll = -1
 	.l = 1
 	for .t to .numPhonTargets
@@ -956,10 +955,10 @@ procedure dptrack .numPhonTargets .numChunks
 		endfor
 		.l += 1
 	endfor
-	endif
 	
 	# Put targets in the right temporal order
 	.last = .numPhonTargets + .numSyllables - 2
+appendInfoLine: "'.numChunks'- '.last' = '.numPhonTargets' + '.numSyllables' - 2"
 	for .i to .last
 		.t1 = t_list [.i]
 		.t2 = t_list [.i + 1]

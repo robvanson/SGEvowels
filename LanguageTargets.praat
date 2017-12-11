@@ -70,6 +70,8 @@ procedure init_LanguageTargets
 	languageTargets.phonemes ["EN-US", "M", "ɒ", "F2"] = 1065.500
 	languageTargets.phonemes ["EN-US", "M", "æ", "F1"] = 552.5000
 	languageTargets.phonemes ["EN-US", "M", "æ", "F2"] = 1659.200
+	languageTargets.phonemes ["EN-US", "M", "e", "F1"] = 552.5000
+	languageTargets.phonemes ["EN-US", "M", "e", "F2"] = 1659.200
 	languageTargets.phonemes ["EN-US", "M", "ɛ", "F1"] = 552.5000
 	languageTargets.phonemes ["EN-US", "M", "ɛ", "F2"] = 1659.200
 	languageTargets.phonemes ["EN-US", "M", "ɜ", "F1"] = 552.5000
@@ -126,6 +128,8 @@ procedure init_LanguageTargets
 	languageTargets.phonemes ["EN-US", "F", "ɒ", "F2"] = 1197.300
 	languageTargets.phonemes ["EN-US", "F", "æ", "F1"] = 667.9000
 	languageTargets.phonemes ["EN-US", "F", "æ", "F2"] = 1748.500
+	languageTargets.phonemes ["EN-US", "F", "e", "F1"] = 667.9000
+	languageTargets.phonemes ["EN-US", "F", "e", "F2"] = 1748.500
 	languageTargets.phonemes ["EN-US", "F", "ɛ", "F1"] = 667.9000
 	languageTargets.phonemes ["EN-US", "F", "ɛ", "F2"] = 1748.500
 	languageTargets.phonemes ["EN-US", "F", "ɜ", "F1"] = 667.9000
