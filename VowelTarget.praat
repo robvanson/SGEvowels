@@ -97,10 +97,13 @@ printline getTargets 1: '.ipa_string$'
 	.vowels$ = replace_regex$(.ipa_string$, "[^'ipavowelsymbols$']+", " ", 0)
 	.vowels$ = replace_regex$(.vowels$, "^[ ]+", "", 0)
 	.vowels$ = replace_regex$(.vowels$, "[ ]+$", "", 0)
-	
-	
+	.vowels$ = replace_regex$(.vowels$, "[ ]+", " ", 0)
+
+appendInfoLine: "Vowels 1: ", .vowels$
+
 	# Split into individual vowels and clusters
 	.vowels$ = replace_regex$(.vowels$, "(.)", "\1;", 0)
+appendInfoLine: "Vowels 2: ", .vowels$
 	.vowels$ = replace_regex$(.vowels$, "[;]+$", "", 0)
 
 printline getTargets 1: '.vowels$'
@@ -115,16 +118,18 @@ printline getTargets 1: '.vowels$'
 		.vowels$ = extract_next_vowel.vowels$
 		
 		if index_regex(ipavowelsymbols$, .segment$)
-			.f1$ = .f1$ + fixed$(languageTargets.phonemes [.lang$, .gender$, .segment$, "F1"],0) + ";"
-			.f2$ = .f2$ + fixed$(languageTargets.phonemes [.lang$, .gender$, .segment$, "F2"],0) + ";"
-			.f3$ = .f3$ + "-" + ";"
-		else
+			.f1$ = .f1$ + fixed$(languageTargets.phonemes [.lang$, .gender$, .segment$, "F1"],0)
+			.f2$ = .f2$ + fixed$(languageTargets.phonemes [.lang$, .gender$, .segment$, "F2"],0)
+			.f3$ = .f3$ + "-"
+appendInfoLine: "V - ", .f1$, " - ", .vowels$
+		elsif .segment$ = ";"
 			.f1$ = .f1$ + ";"
 			.f2$ = .f2$ + ";"
 			.f3$ = .f3$ + ";"
+appendInfoLine: "; - ", .f1$, " - ", .vowels$
 		endif
 	endwhile
-printline getTargets 3: '.f1$', '.f2'
+printline getTargets 3: '.f1$', '.f2$'
 endproc
 
 procedure extract_first_vowelcluster .ipa_string$
@@ -958,8 +963,16 @@ procedure dptrack .numPhonTargets .numChunks
 	
 	# Put targets in the right temporal order
 	.last = .numPhonTargets + .numSyllables - 2
-appendInfoLine: "'.numChunks'- '.last' = '.numPhonTargets' + '.numSyllables' - 2"
+	
+	
 	for .i to .last
+		.k = .i + 1
+		if not variableExists("t_list ['.k']")
+			t_list [.i + 1] = -2
+			f1_list [.i + 1] = -2
+			f2_list [.i + 1] = -2
+		endif
+		
 		.t1 = t_list [.i]
 		.t2 = t_list [.i + 1]
 		if .t1 > 0 and .t2 > 0 and .t1 > .t2
