@@ -1,12 +1,12 @@
 #! praat
 # 
-# Practice Mandarin vowel pronunciation
+# Practice vowel pronunciation
 #
 # Copyright: R.J.J.H. van Son, 2017
 # License: GNU GPL v2 or later
 # email: r.j.j.h.vanson@gmail.com
 # 
-#     SGCvowels.praat: Praat script to practice vowel pronunciation 
+#     SGEvowels.praat: Praat script to practice vowel pronunciation 
 #     
 #     Copyright (C) 2017  R.J.J.H. van Son and the Netherlands Cancer Institute
 # 
@@ -230,6 +230,8 @@ procedure plot_vowels .plot, .color$ .sp$ .sound .word$ .ipa$ .gendert$ .f1_targ
 	endwhile
 
 	# Get the best trace of targets
+appendInfoLine: ".numPhonTargets = ", .numPhonTargets
+appendInfoLine: ".numChunks = ", .numChunks
 	if .numPhonTargets > 0 and .numChunks > 0
 		@dptrack: .numPhonTargets, .numChunks
 	else
@@ -435,8 +437,8 @@ procedure plot_vowel_triangle .sp$
 	demo Draw line: .x1, .y1, .x2, .y2
 	demoShow()
 	
-	# Other Pinyin vowels
-	# /o/
+	# Other vowels
+	# /o/ /e/
 	@write_vowel_label: .sp$, "o_side", "o"
 	@write_vowel_label: .sp$, "e_side", "e"
 
@@ -622,51 +624,6 @@ procedure get_closest_vowels .sp$ .formants .textgrid .startT .gendert$ .f1_o .f
 	endfor
 	
 	.distance = sqrt(.distance)
-endproc
-
-# Convert pinyin (numbers) to IPA and targers
-procedure pinyin2ipa .word$
-	.f1$ = ""
-	.f2$ = ""
-	.f3$ = ""
-	.t$ = ""
-	.gender$ = "F"
-	.ipa$ = ""
-	
-	.word$ = replace$(.word$, "uu", "v", 0)
-	@add_missing_neutral_tones: .word$
-	.tmp$ = add_missing_neutral_tones.word$
-	
-	while index_regex(.tmp$, "\S")
-		.syll$ = replace_regex$(.tmp$, "^([^\d]+\d+)(.*$)", "\1", 0)
-		.tmp$ = replace_regex$(.tmp$, "^([^\d]+\d+)", "", 0)
-		if not index_regex(.tmp$, "\d")
-			.tmp$ = ""
-		endif
-		selectObject: sge.en_usIPA
-		.r = Search column: "Num", .syll$
-		if .r > 0
-			.current_ipa$ = Get value: .r, "IPA"
-			.ipa$ = .ipa$ + .current_ipa$ + " "
-			.gender$ = Get value: .r, "Gender"
-			.current_F1$ = Get value: .r, "F1"
-			.f1$ = .f1$ + .current_F1$ + " ;"
-			.current_F2$ = Get value: .r, "F2"
-			.f2$ = .f2$ + .current_F2$ + " ;"
-			.current_F3$ = Get value: .r, "F3"
-			.f3$ = .f3$ + .current_F3$ + " ;"
-			.current_t$ = Get value: .r, "t"
-			.t$ = .t$ + .current_t$ + " ;"
-		else
-			.current_ipa$ = replace_regex$(.syll$, "y[i]?", "ji", 0)
-			.current_ipa$ = replace_regex$(.current_ipa$, "v", "y", 0)
-			.current_ipa$ = replace_regex$(.current_ipa$, "\d", "", 0)
-			@calculate_targets: .gender$, .syll$, .current_ipa$
-			.f1$ = .f1$ + calculate_targets.f1_targets$ + " ;"
-			.f2$ = .f2$ + calculate_targets.f2_targets$ + " ;"
-			.f3$ = .f3$ + calculate_targets.f3_targets$ + " ;"
-		endif
-	endwhile
 endproc
 
 # 
@@ -960,33 +917,54 @@ procedure dptrack .numPhonTargets .numChunks
 		endfor
 		.l += 1
 	endfor
+	.last = .l - 1
 	
-	# Put targets in the right temporal order
-	.last = .numPhonTargets + .numSyllables - 2
-	
-	
+	appendInfoLine: "Unordered Targets: ", .last
 	for .i to .last
-		.k = .i + 1
-		if not variableExists("t_list ['.k']")
-			t_list [.i + 1] = -2
-			f1_list [.i + 1] = -2
-			f2_list [.i + 1] = -2
-		endif
-		
-		.t1 = t_list [.i]
-		.t2 = t_list [.i + 1]
-		if .t1 > 0 and .t2 > 0 and .t1 > .t2
-			.tmp = f1_list [.i]
-			f1_list [.i] = f1_list [.i + 1]
-			f1_list [.i + 1] = .tmp
-			
-			.tmp = f2_list [.i]
-			f2_list [.i] = f2_list [.i + 1]
-			f2_list [.i + 1] = .tmp
-			
-			.tmp = t_list [.i]
-			t_list [.i] = t_list [.i + 1]
-			t_list [.i + 1] = .tmp
-		endif		
+		appendInfo: " ", t_list [.i]
 	endfor
+	appendInfoLine: " "
+	for .i to .last
+		appendInfo: " ", f1_list [.i]
+	endfor
+	appendInfoLine: " "
+	for .i to .last
+		appendInfo: " ", f2_list [.i]
+	endfor
+	appendInfoLine: " "
+
+	for .i from 2 to .last
+		
+		.t1 = t_list [.i - 1]
+		.t2 = t_list [.i]
+		if .t1 > 0 and .t2 > 0 and .t1 > .t2
+			.tmp = f1_list [.i - 1]
+			f1_list [.i - 1] = f1_list [.i]
+			f1_list [.i] = .tmp
+			
+			.tmp = f2_list [.i - 1]
+			f2_list [.i - 1] = f2_list [.i]
+			f2_list [.i] = .tmp
+			
+			.tmp = t_list [.i - 1]
+			t_list [.i - 1] = t_list [.i]
+			t_list [.i] = .tmp
+		endif
+	endfor
+	
+	
+	appendInfoLine: "Targets: ", .last
+	for .i to .last
+		appendInfo: " ", t_list [.i]
+	endfor
+	appendInfoLine: " "
+	for .i to .last
+		appendInfo: " ", f1_list [.i]
+	endfor
+	appendInfoLine: " "
+	for .i to .last
+		appendInfo: " ", f2_list [.i]
+	endfor
+	appendInfoLine: " "
+
 endproc
