@@ -153,7 +153,7 @@ endproc
 
 # Plot the vowels in a sound
 procedure plot_vowels .plot, .color$ .sp$ .sound .word$ .ipa$ .gendert$ .f1_targets$ .f2_targets$ .f3_targets$
-	.startT = 0 
+	.startT = 0
 	call segment_syllables -25 4 0.3 1 .sound
 	.syllableKernels = segment_syllables.textgridid
 	
@@ -170,6 +170,24 @@ procedure plot_vowels .plot, .color$ .sp$ .sound .word$ .ipa$ .gendert$ .f1_targ
 	call select_vowel_target .sound .formants .syllableKernels
 	.vowelTier = select_vowel_target.vowelTier
 	.targetTier = select_vowel_target.targetTier
+	
+	if variableExists("sourceTextGrid") and sourceTextGrid > 0
+		selectObject: .syllableKernels
+		Remove
+		selectObject: sourceTextGrid
+		.syllableKernels = Copy: "SourceTextGrid"
+	elsif variableExists("sourceTextGrid") and .plot
+		selectObject: .sound
+		plusObject: .syllableKernels
+		Edit
+		pause 'sourceTextGridName$'
+		selectObject: .syllableKernels
+		.numTiers = Get number of tiers
+		for .t to .numTiers - 2
+			Remove tier: .numTiers + 1 - .t
+		endfor
+		Save as short text file: sourceTextGridName$
+	endif
 	selectObject: .syllableKernels
 	.numSyllables = Get number of points: .targetTier
 	.startT = 0
@@ -494,10 +512,8 @@ endproc
 
 # Get next positive value from list "<value>;<value>;..." where " ;" represents a syllable boundary
 procedure extract_next_vowel .vowels$
-printline extract_next_vowel '.vowels$'
 	.segment$ = replace_regex$(.vowels$, "^(.).*$", "\1", 0)
 	.vowels$ = replace_regex$(.vowels$, "^(.)(.*)$", "\2", 0)
-printline extract_next_vowel '.segment$' - '.vowels$'
 endproc
 
 procedure extract_next_target .targets$

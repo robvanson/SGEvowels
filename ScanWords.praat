@@ -1,6 +1,7 @@
 #!praat
 #
 .sp_default = 2
+scanWords = 1
 
 # Initialization
 call init_LanguageTargets
@@ -33,12 +34,22 @@ endif
 
 selectObject: .audioList
 .numFiles = Get number of rows
+	sourceTextGrid = -1
 for .f to .numFiles
 	selectObject: .audioList
 	.infile$ = Get value: .f, "Audio"
 	.word$ = Get value: .f, "Words"
 	.ipa$ = Get value: .f, "IPA"
 	.sound = Read from file: .infile$
+	if sourceTextGrid > 0
+		selectObject: sourceTextGrid
+		Remove
+	endif
+	sourceTextGrid = -1
+	sourceTextGridName$ = replace_regex$(.infile$, "\.(wav|mp3|ogg)$", ".TextGrid", 0)
+	if index_regex(sourceTextGridName$, "TextGrid$") and fileReadable(sourceTextGridName$)
+		sourceTextGrid = Read from file: sourceTextGridName$
+	endif
 	
 	if plot
 		demo Erase all
