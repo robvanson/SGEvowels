@@ -92,21 +92,15 @@ procedure extract_first_vowel .ipa_string$
 endproc
 
 procedure getTargets .lang$ .gender$ .ipa_string$
-printline getTargets 1: '.ipa_string$'
 	# Remove non-vowel symbols
 	.vowels$ = replace_regex$(.ipa_string$, "[^'ipavowelsymbols$']+", " ", 0)
 	.vowels$ = replace_regex$(.vowels$, "^[ ]+", "", 0)
 	.vowels$ = replace_regex$(.vowels$, "[ ]+$", "", 0)
 	.vowels$ = replace_regex$(.vowels$, "[ ]+", " ", 0)
 
-appendInfoLine: "Vowels 1: ", .vowels$
-
 	# Split into individual vowels and clusters
 	.vowels$ = replace_regex$(.vowels$, "(.)", "\1;", 0)
-appendInfoLine: "Vowels 2: ", .vowels$
 	.vowels$ = replace_regex$(.vowels$, "[;]+$", "", 0)
-
-printline getTargets 1: '.vowels$'
 
 	# Get targets
 	.f1$ = ""
@@ -121,15 +115,12 @@ printline getTargets 1: '.vowels$'
 			.f1$ = .f1$ + fixed$(languageTargets.phonemes [.lang$, .gender$, .segment$, "F1"],0)
 			.f2$ = .f2$ + fixed$(languageTargets.phonemes [.lang$, .gender$, .segment$, "F2"],0)
 			.f3$ = .f3$ + "-"
-appendInfoLine: "V - ", .f1$, " - ", .vowels$
 		elsif .segment$ = ";"
 			.f1$ = .f1$ + ";"
 			.f2$ = .f2$ + ";"
 			.f3$ = .f3$ + ";"
-appendInfoLine: "; - ", .f1$, " - ", .vowels$
 		endif
 	endwhile
-printline getTargets 3: '.f1$', '.f2$'
 endproc
 
 procedure extract_first_vowelcluster .ipa_string$
@@ -248,8 +239,6 @@ procedure plot_vowels .plot, .color$ .sp$ .sound .word$ .ipa$ .gendert$ .f1_targ
 	endwhile
 
 	# Get the best trace of targets
-appendInfoLine: ".numPhonTargets = ", .numPhonTargets
-appendInfoLine: ".numChunks = ", .numChunks
 	if .numPhonTargets > 0 and .numChunks > 0
 		@dptrack: .numPhonTargets, .numChunks
 	else
@@ -766,175 +755,186 @@ procedure dptrack .numPhonTargets .numChunks
 		endfor
 	endfor
 	
-	# Fill cost matrix
-	# Minimum Distance
-	.c_cost = 2
-	.s_cost = 2
-	.diagonal_cost = 1
-	for .s to .numSyllables
-		for .c to .numChunks
-			.dc = distanceSyllablesMin [.s, .c]
-			if .s > 1 or .c > 1
-				if .s > 1
-					.cPrevS = .costSyllMatrixMin [.s - 1, .c] + .dc * .s_cost
-				else
-					.cPrevS = 10^10
-				endif
-				if .c > 1
-					.cPrevC = .costSyllMatrixMin [.s, .c - 1] + .dc * .c_cost
-				else
-					.cPrevC = 10^10
-				endif
-				if .s > 1 and .c > 1
-					.cDiagonal = .costSyllMatrixMin [.s - 1, .c - 1] + .dc * .diagonal_cost
-				else
-					.cDiagonal = 10^10
-				endif
-				.minCost =  min(.cPrevS, .cPrevC, .cDiagonal)
-				if .cPrevS = .minCost or .c <= 1
-					.directionMatrixMin [.s, .c] = 1
-				elsif .cPrevC = .minCost or .s <= 1
-					.directionMatrixMin [.s, .c] = 2
-				else
-					.directionMatrixMin [.s, .c] = 3
-				endif
-			else
-				.minCost = .dc
-				.directionMatrixMin [1, 1] = 3
-			endif
-			.costSyllMatrixMin [.s, .c] = .minCost
-		endfor
-	endfor
-	# Mean Distance
-	.c_cost = 2
-	.s_cost = 2
-	.diagonal_cost = 1
-	for .s to .numSyllables
-		for .c to .numChunks
-			.dc = distanceSyllablesMean [.s, .c]
-			if .s > 1 or .c > 1
-				if .s > 1
-					.cPrevS = .costSyllMatrixMean [.s - 1, .c] + .dc * .s_cost
-				else
-					.cPrevS = 10^10
-				endif
-				if .c > 1
-					.cPrevC = .costSyllMatrixMean [.s, .c - 1] + .dc * .c_cost
-				else
-					.cPrevC = 10^10
-				endif
-				if .s > 1 and .c > 1
-					.cDiagonal = .costSyllMatrixMean [.s - 1, .c - 1] + .dc * .diagonal_cost
-				else
-					.cDiagonal = 10^10
-				endif
-				.minCost =  min(.cPrevS, .cPrevC, .cDiagonal)
-				if .cPrevS = .minCost or .c <= 1
-					.directionMatrixMean [.s, .c] = 1
-				elsif .cPrevC = .minCost or .s <= 1
-					.directionMatrixMean [.s, .c] = 2
-				else
-					.directionMatrixMean [.s, .c] = 3
-				endif
-			else
-				.minCost = .dc
-				.directionMatrixMean [1, 1] = 3
-			endif
-			.costSyllMatrixMean [.s, .c] = .minCost
-		endfor
-	endfor
-	
-	# Associate Syllables to Chunks
+	# Choose one of the following
 	# Minimum distance
-	.s = .numSyllables
-	.c = .numChunks
-	while .s > 0 and .c > 0
-		.syllableChunksMin [.c] = .s
-		if .directionMatrixMin [.s, .c] = 1
-			.s -= 1
-		elsif .directionMatrixMin [.s, .c] = 2
-			.c -= 1
-		else
-			.s -= 1
-			.c -= 1
-		endif
-	endwhile
-	# Associate Syllables to Chunks
-	# Mean distance
-	.s = .numSyllables
-	.c = .numChunks
-	while .s > 0 and .c > 0
-		.syllableChunksMean [.c] = .s
-		if .directionMatrixMean [.s, .c] = 1
-			.s -= 1
-		elsif .directionMatrixMean [.s, .c] = 2
-			.c -= 1
-		else
-			.s -= 1
-			.c -= 1
-		endif
-	endwhile
-	
-	# Determine targets
-	# Minimum distance
-	.lastSyll = -1
-	.l = 1
-	for .t to .numPhonTargets
-		.minDistance = 10^6
-		# If this is a new syllable, insert break
-		.s = syllable [.t, 1]
-		if .s > 1 and .s <> .lastSyll
-			.lastSyll = .s
-			f1_list [.l] = -1
-			f2_list [.l] = -1
-			t_list [.l] = -1
-			.l += 1			
-		endif
-		for .c to .numChunks
-			if .s = .syllableChunksMin [.c]
-				if distance [.t, .c] < .minDistance
-					.minDistance = distance [.t, .c]
-					f1_list [.l] = f1_table[.t,.c]
-					f2_list [.l] = f2_table[.t,.c]
-					t_list [.l] = t_table[.t,.c]
+	if 0
+		# Fill cost matrix
+		# Minimum Distance
+		.c_cost = 2
+		.s_cost = 2
+		.diagonal_cost = 1
+		for .s to .numSyllables
+			for .c to .numChunks
+				.dc = distanceSyllablesMin [.s, .c]
+				if .s > 1 or .c > 1
+					if .s > 1
+						.cPrevS = .costSyllMatrixMin [.s - 1, .c] + .dc * .s_cost
+					else
+						.cPrevS = 10^10
+					endif
+					if .c > 1
+						.cPrevC = .costSyllMatrixMin [.s, .c - 1] + .dc * .c_cost
+					else
+						.cPrevC = 10^10
+					endif
+					if .s > 1 and .c > 1
+						.cDiagonal = .costSyllMatrixMin [.s - 1, .c - 1] + .dc * .diagonal_cost
+					else
+						.cDiagonal = 10^10
+					endif
+					.minCost =  min(.cPrevS, .cPrevC, .cDiagonal)
+					if .cPrevS = .minCost or .c <= 1
+						.directionMatrixMin [.s, .c] = 1
+					elsif .cPrevC = .minCost or .s <= 1
+						.directionMatrixMin [.s, .c] = 2
+					else
+						.directionMatrixMin [.s, .c] = 3
+					endif
+				else
+					.minCost = .dc
+					.directionMatrixMin [1, 1] = 3
 				endif
-			endif
+				.costSyllMatrixMin [.s, .c] = .minCost
+			endfor
 		endfor
-		.l += 1
-	endfor
-	# Add closing syllable
-	f1_list [.l] = -1
-	f2_list [.l] = -1
-	t_list [.l] = -1
 	
-	# Mean distance
-	.lastSyll = -1
-	.l = 1
-	for .t to .numPhonTargets
-		.minDistance = 10^6
-		# If this is a new syllable, insert break
-		.s = syllable [.t, 1]
-		if .s > 1 and .s <> .lastSyll
-			.lastSyll = .s
-			f1_list [.l] = -1
-			f2_list [.l] = -1
-			t_list [.l] = -1
-			.l += 1			
-		endif
-		for .c to .numChunks
-			if .s = .syllableChunksMean [.c]
-				if distance [.t, .c] < .minDistance
-					.minDistance = distance [.t, .c]
-					f1_list [.l] = f1_table[.t,.c]
-					f2_list [.l] = f2_table[.t,.c]
-					t_list [.l] = t_table[.t,.c]
+		# Associate Syllables to Chunks
+		# Minimum distance
+		.s = .numSyllables
+		.c = .numChunks
+		while .s > 0 and .c > 0
+			.syllableChunksMin [.c] = .s
+			if .directionMatrixMin [.s, .c] = 1
+				.s -= 1
+			elsif .directionMatrixMin [.s, .c] = 2
+				.c -= 1
+			else
+				.s -= 1
+				.c -= 1
+			endif
+		endwhile
+	
+		# Associate Phonemes to Chunks
+		# Determine targets
+		# Minimum distance
+		.lastSyll = -1
+		.l = 1
+		for .t to .numPhonTargets
+			.minDistance = 10^6
+			# If this is a new syllable, insert break
+			.s = syllable [.t, 1]
+			if .s > 1 and .s <> .lastSyll
+				.lastSyll = .s
+				f1_list [.l] = -1
+				f2_list [.l] = -1
+				t_list [.l] = -1
+				.l += 1			
+			endif
+			for .c to .numChunks
+				if .s = .syllableChunksMin [.c]
+					if distance [.t, .c] < .minDistance
+						.minDistance = distance [.t, .c]
+						f1_list [.l] = f1_table[.t,.c]
+						f2_list [.l] = f2_table[.t,.c]
+						t_list [.l] = t_table[.t,.c]
+					endif
 				endif
-			endif
+			endfor
+			.l += 1
 		endfor
-		.l += 1
-	endfor
-	.last = .l - 1
+		# Add closing syllable
+		f1_list [.l] = -1
+		f2_list [.l] = -1
+		t_list [.l] = -1
+	else
+		# Fill cost matrix
+		# Mean Distance
+		.c_cost = 2
+		.s_cost = 2
+		.diagonal_cost = 1
+		for .s to .numSyllables
+			for .c to .numChunks
+				.dc = distanceSyllablesMean [.s, .c]
+				if .s > 1 or .c > 1
+					if .s > 1
+						.cPrevS = .costSyllMatrixMean [.s - 1, .c] + .dc * .s_cost
+					else
+						.cPrevS = 10^10
+					endif
+					if .c > 1
+						.cPrevC = .costSyllMatrixMean [.s, .c - 1] + .dc * .c_cost
+					else
+						.cPrevC = 10^10
+					endif
+					if .s > 1 and .c > 1
+						.cDiagonal = .costSyllMatrixMean [.s - 1, .c - 1] + .dc * .diagonal_cost
+					else
+						.cDiagonal = 10^10
+					endif
+					.minCost =  min(.cPrevS, .cPrevC, .cDiagonal)
+					if .cPrevS = .minCost or .c <= 1
+						.directionMatrixMean [.s, .c] = 1
+					elsif .cPrevC = .minCost or .s <= 1
+						.directionMatrixMean [.s, .c] = 2
+					else
+						.directionMatrixMean [.s, .c] = 3
+					endif
+				else
+					.minCost = .dc
+					.directionMatrixMean [1, 1] = 3
+				endif
+				.costSyllMatrixMean [.s, .c] = .minCost
+			endfor
+		endfor
 	
+		# Associate Syllables to Chunks
+		# Mean distance
+		.s = .numSyllables
+		.c = .numChunks
+		while .s > 0 and .c > 0
+			.syllableChunksMean [.c] = .s
+			if .directionMatrixMean [.s, .c] = 1
+				.s -= 1
+			elsif .directionMatrixMean [.s, .c] = 2
+				.c -= 1
+			else
+				.s -= 1
+				.c -= 1
+			endif
+		endwhile
+
+		# Associate Phonemes to Chunks
+		# Determine targets
+		# Mean distance
+		.lastSyll = -1
+		.l = 1
+		for .t to .numPhonTargets
+			.minDistance = 10^6
+			# If this is a new syllable, insert break
+			.s = syllable [.t, 1]
+			if .s > 1 and .s <> .lastSyll
+				.lastSyll = .s
+				f1_list [.l] = -1
+				f2_list [.l] = -1
+				t_list [.l] = -1
+				.l += 1			
+			endif
+			for .c to .numChunks
+				if .s = .syllableChunksMean [.c]
+					if distance [.t, .c] < .minDistance
+						.minDistance = distance [.t, .c]
+						f1_list [.l] = f1_table[.t,.c]
+						f2_list [.l] = f2_table[.t,.c]
+						t_list [.l] = t_table[.t,.c]
+					endif
+				endif
+			endfor
+			.l += 1
+		endfor
+		.last = .l - 1
+	endif
+	
+	appendInfoLine: "IPA: ", drawSourceVowelTarget.ipa$
 	appendInfoLine: "Unordered Targets: ", .last
 	for .i to .last
 		appendInfo: " ", t_list [.i]
@@ -949,8 +949,9 @@ procedure dptrack .numPhonTargets .numChunks
 	endfor
 	appendInfoLine: " "
 
+	# If phonemes are ordered wrong, determine correct targets.
+	# STILL HAS TO BE DONE!!!
 	for .i from 2 to .last
-		
 		.t1 = t_list [.i - 1]
 		.t2 = t_list [.i]
 		if .t1 > 0 and .t2 > 0 and .t1 > .t2
@@ -981,6 +982,7 @@ procedure dptrack .numPhonTargets .numChunks
 	for .i to .last
 		appendInfo: " ", f2_list [.i]
 	endfor
+	appendInfoLine: " "
 	appendInfoLine: " "
 
 endproc
