@@ -241,6 +241,7 @@ procedure plot_vowels .plot, .color$ .sp$ .sound .word$ .ipa$ .gendert$ .f1_targ
 	# Get the best trace of targets
 	if .numPhonTargets > 0 and .numChunks > 0
 		@dptrack: .numPhonTargets, .numChunks
+		@reorder_multi_targets
 	else
 		appendInfoLine: "@dptrack: ",.numPhonTargets, ", ", .numChunks
 	endif
@@ -248,8 +249,8 @@ procedure plot_vowels .plot, .color$ .sp$ .sound .word$ .ipa$ .gendert$ .f1_targ
 	# Actually plot the vowels
 	.radius = 1
 	if .plot and .targetnum > 0
-		if f1_list [1] > 0
-			@vowel2point: .sp$, f1_list [1], f2_list [1]
+		if vowelTarget.f1_list [1] > 0
+			@vowel2point: .sp$, vowelTarget.f1_list [1], vowelTarget.f2_list [1]
 			.x = vowel2point.x
 			.y = vowel2point.y
 			demo Paint circle: .color$, .x, .y, .radius
@@ -262,8 +263,8 @@ procedure plot_vowels .plot, .color$ .sp$ .sound .word$ .ipa$ .gendert$ .f1_targ
 		for .t from 2 to .targetnum
 			.xlast = .x
 			.ylast = .y
-			if f1_list [.t] > 0
-				@vowel2point: .sp$, f1_list [.t], f2_list [.t]
+			if vowelTarget.f1_list [.t] > 0
+				@vowel2point: .sp$, vowelTarget.f1_list [.t], vowelTarget.f2_list [.t]
 				.x = vowel2point.x
 				.y = vowel2point.y
 				if .plotArrow
@@ -291,11 +292,11 @@ procedure plot_vowels .plot, .color$ .sp$ .sound .word$ .ipa$ .gendert$ .f1_targ
 		.f3values$ = ""
 		.tvalues$ = ""
 		for .t to .targetnum
-			if f1_list [.t] > 0
-				.f1values$ = .f1values$ + fixed$(f1_list [.t], 0) + ";"
-				.f2values$ = .f2values$ + fixed$(f2_list [.t], 0) + ";"
+			if vowelTarget.f1_list [.t] > 0
+				.f1values$ = .f1values$ + fixed$(vowelTarget.f1_list [.t], 0) + ";"
+				.f2values$ = .f2values$ + fixed$(vowelTarget.f2_list [.t], 0) + ";"
 				.f3values$ = .f3values$ + fixed$(f3_list [.t], 0) + ";"
-				.tvalues$ = .tvalues$ + fixed$(t_list [.t], 3) + ";"
+				.tvalues$ = .tvalues$ + fixed$(vowelTarget.t_list [.t], 3) + ";"
 			else
 				.f1values$ = .f1values$ + " " + ";"
 				.f2values$ = .f2values$ + " " + ";"
@@ -323,13 +324,13 @@ procedure plot_targets .color$ .sp$ .f1_targets$ .f2_targets$ .f3_targets$
 		@extract_next_target: .f3_targets$
 		.f3 = extract_next_target.value
 		.f3_targets$ = extract_next_target.targets$
-		f1_list [.t] = .f1
-		f2_list [.t] = .f2
+		vowelTarget.f1_list [.t] = .f1
+		vowelTarget.f2_list [.t] = .f2
 	endwhile
 	.targetnum = .t
 	.radius = 1
-	if f1_list [1] > 0
-		@vowel2point: .sp$, f1_list [1], f2_list [1]
+	if vowelTarget.f1_list [1] > 0
+		@vowel2point: .sp$, vowelTarget.f1_list [1], vowelTarget.f2_list [1]
 		.x = vowel2point.x
 		.y = vowel2point.y
 		demo Paint circle: .color$, .x, .y, .radius
@@ -342,8 +343,8 @@ procedure plot_targets .color$ .sp$ .f1_targets$ .f2_targets$ .f3_targets$
 	for .t from 2 to .targetnum
 		.xlast = .x
 		.ylast = .y
-		if f1_list [.t] > 0
-			@vowel2point: .sp$, f1_list [.t], f2_list [.t]
+		if vowelTarget.f1_list [.t] > 0
+			@vowel2point: .sp$, vowelTarget.f1_list [.t], vowelTarget.f2_list [.t]
 			.x = vowel2point.x
 			.y = vowel2point.y
 			if .plotArrow
@@ -719,6 +720,10 @@ endproc
 # Uses global variables:
 # distances [target, chunk] 
 # syllables [target, chunk]
+# 
+# Creates global lists:
+# vowelTarget.t_list, vowelTarget.f1_list, vowelTarget.f2_list
+vowelTarget.list_length = -1
 procedure dptrack .numPhonTargets .numChunks
 
 	# Fill syllables to chunks distance matrix
@@ -825,27 +830,27 @@ procedure dptrack .numPhonTargets .numChunks
 			.s = syllable [.t, 1]
 			if .s > 1 and .s <> .lastSyll
 				.lastSyll = .s
-				f1_list [.l] = -1
-				f2_list [.l] = -1
-				t_list [.l] = -1
+				vowelTarget.f1_list [.l] = -1
+				vowelTarget.f2_list [.l] = -1
+				vowelTarget.t_list [.l] = -1
 				.l += 1			
 			endif
 			for .c to .numChunks
 				if .s = .syllableChunksMin [.c]
 					if distance [.t, .c] < .minDistance
 						.minDistance = distance [.t, .c]
-						f1_list [.l] = f1_table[.t,.c]
-						f2_list [.l] = f2_table[.t,.c]
-						t_list [.l] = t_table[.t,.c]
+						vowelTarget.f1_list [.l] = f1_table[.t,.c]
+						vowelTarget.f2_list [.l] = f2_table[.t,.c]
+						vowelTarget.t_list [.l] = t_table[.t,.c]
 					endif
 				endif
 			endfor
 			.l += 1
 		endfor
 		# Add closing syllable
-		f1_list [.l] = -1
-		f2_list [.l] = -1
-		t_list [.l] = -1
+		vowelTarget.f1_list [.l] = -1
+		vowelTarget.f2_list [.l] = -1
+		vowelTarget.t_list [.l] = -1
 	else
 		# Fill cost matrix
 		# Mean Distance
@@ -914,18 +919,18 @@ procedure dptrack .numPhonTargets .numChunks
 			.s = syllable [.t, 1]
 			if .s > 1 and .s <> .lastSyll
 				.lastSyll = .s
-				f1_list [.l] = -1
-				f2_list [.l] = -1
-				t_list [.l] = -1
+				vowelTarget.f1_list [.l] = -1
+				vowelTarget.f2_list [.l] = -1
+				vowelTarget.t_list [.l] = -1
 				.l += 1			
 			endif
 			for .c to .numChunks
 				if .s = .syllableChunksMean [.c]
 					if distance [.t, .c] < .minDistance
 						.minDistance = distance [.t, .c]
-						f1_list [.l] = f1_table[.t,.c]
-						f2_list [.l] = f2_table[.t,.c]
-						t_list [.l] = t_table[.t,.c]
+						vowelTarget.f1_list [.l] = f1_table[.t,.c]
+						vowelTarget.f2_list [.l] = f2_table[.t,.c]
+						vowelTarget.t_list [.l] = t_table[.t,.c]
 					endif
 				endif
 			endfor
@@ -933,56 +938,70 @@ procedure dptrack .numPhonTargets .numChunks
 		endfor
 		.last = .l - 1
 	endif
-	
+	vowelTarget.list_length = .last
+endproc
+
+# 
+# The dptrack DP tracker does not correctly resolve multiple targets
+# in the same chunk, e.g., diphtongs and triphthongs.
+# This procedure will try to correct the targets if their time order 
+# in the lists is different then in the original targets
+# 
+# Uses and changes global variables:
+# vowelTarget.t_list, vowelTarget.f1_list, vowelTarget.f2_list
+# 
+# 
+procedure reorder_multi_targets 
+		
 	appendInfoLine: "IPA: ", drawSourceVowelTarget.ipa$
-	appendInfoLine: "Unordered Targets: ", .last
-	for .i to .last
-		appendInfo: " ", t_list [.i]
+	appendInfoLine: "Unordered Targets: ", vowelTarget.list_length
+	for .i to vowelTarget.list_length
+		appendInfo: " ", vowelTarget.t_list [.i]
 	endfor
 	appendInfoLine: " "
-	for .i to .last
-		appendInfo: " ", f1_list [.i]
+	for .i to vowelTarget.list_length
+		appendInfo: " ", vowelTarget.f1_list [.i]
 	endfor
 	appendInfoLine: " "
-	for .i to .last
-		appendInfo: " ", f2_list [.i]
+	for .i to vowelTarget.list_length
+		appendInfo: " ", vowelTarget.f2_list [.i]
 	endfor
 	appendInfoLine: " "
 
 	# If phonemes are ordered wrong, determine correct targets.
 	# STILL HAS TO BE DONE!!!
-	for .i from 2 to .last
-		.t1 = t_list [.i - 1]
-		.t2 = t_list [.i]
+	for .i from 2 to vowelTarget.list_length
+		.t1 = vowelTarget.t_list [.i - 1]
+		.t2 = vowelTarget.t_list [.i]
 		if .t1 > 0 and .t2 > 0 and .t1 > .t2
-			.tmp = f1_list [.i - 1]
-			f1_list [.i - 1] = f1_list [.i]
-			f1_list [.i] = .tmp
+			# Find new targets for this chunk
+			.tmp = vowelTarget.f1_list [.i - 1]
+			vowelTarget.f1_list [.i - 1] = vowelTarget.f1_list [.i]
+			vowelTarget.f1_list [.i] = .tmp
 			
-			.tmp = f2_list [.i - 1]
-			f2_list [.i - 1] = f2_list [.i]
-			f2_list [.i] = .tmp
+			.tmp = vowelTarget.f2_list [.i - 1]
+			vowelTarget.f2_list [.i - 1] = vowelTarget.f2_list [.i]
+			vowelTarget.f2_list [.i] = .tmp
 			
-			.tmp = t_list [.i - 1]
-			t_list [.i - 1] = t_list [.i]
-			t_list [.i] = .tmp
+			.tmp = vowelTarget.t_list [.i - 1]
+			vowelTarget.t_list [.i - 1] = vowelTarget.t_list [.i]
+			vowelTarget.t_list [.i] = .tmp
 		endif
 	endfor
 	
 	
-	appendInfoLine: "Targets: ", .last
-	for .i to .last
-		appendInfo: " ", t_list [.i]
+	appendInfoLine: "Targets: ", vowelTarget.list_length
+	for .i to vowelTarget.list_length
+		appendInfo: " ", vowelTarget.t_list [.i]
 	endfor
 	appendInfoLine: " "
-	for .i to .last
-		appendInfo: " ", f1_list [.i]
+	for .i to vowelTarget.list_length
+		appendInfo: " ", vowelTarget.f1_list [.i]
 	endfor
 	appendInfoLine: " "
-	for .i to .last
-		appendInfo: " ", f2_list [.i]
+	for .i to vowelTarget.list_length
+		appendInfo: " ", vowelTarget.f2_list [.i]
 	endfor
 	appendInfoLine: " "
 	appendInfoLine: " "
-
 endproc
