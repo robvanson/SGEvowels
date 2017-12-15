@@ -295,7 +295,7 @@ procedure plot_vowels .plot, .color$ .sp$ .sound .word$ .ipa$ .gendert$ .f1_targ
 			if vowelTarget.f1_list [.t] > 0
 				.f1values$ = .f1values$ + fixed$(vowelTarget.f1_list [.t], 0) + ";"
 				.f2values$ = .f2values$ + fixed$(vowelTarget.f2_list [.t], 0) + ";"
-				.f3values$ = .f3values$ + fixed$(f3_list [.t], 0) + ";"
+				.f3values$ = .f3values$ + fixed$(vowelTarget.f3_list [.t], 0) + ";"
 				.tvalues$ = .tvalues$ + fixed$(vowelTarget.t_list [.t], 3) + ";"
 			else
 				.f1values$ = .f1values$ + " " + ";"
@@ -326,6 +326,7 @@ procedure plot_targets .color$ .sp$ .f1_targets$ .f2_targets$ .f3_targets$
 		.f3_targets$ = extract_next_target.targets$
 		vowelTarget.f1_list [.t] = .f1
 		vowelTarget.f2_list [.t] = .f2
+		vowelTarget.f3_list [.t] = .f3
 	endwhile
 	.targetnum = .t
 	.radius = 1
@@ -832,6 +833,7 @@ procedure dptrack .numPhonTargets .numChunks
 				.lastSyll = .s
 				vowelTarget.f1_list [.l] = -1
 				vowelTarget.f2_list [.l] = -1
+				vowelTarget.f3_list [.l] = -1
 				vowelTarget.t_list [.l] = -1
 				.l += 1			
 			endif
@@ -841,6 +843,7 @@ procedure dptrack .numPhonTargets .numChunks
 						.minDistance = distance [.t, .c]
 						vowelTarget.f1_list [.l] = f1_table[.t,.c]
 						vowelTarget.f2_list [.l] = f2_table[.t,.c]
+						vowelTarget.f3_list [.l] = -1
 						vowelTarget.t_list [.l] = t_table[.t,.c]
 					endif
 				endif
@@ -850,6 +853,7 @@ procedure dptrack .numPhonTargets .numChunks
 		# Add closing syllable
 		vowelTarget.f1_list [.l] = -1
 		vowelTarget.f2_list [.l] = -1
+		vowelTarget.f3_list [.l] = -1
 		vowelTarget.t_list [.l] = -1
 	else
 		# Fill cost matrix
@@ -921,6 +925,7 @@ procedure dptrack .numPhonTargets .numChunks
 				.lastSyll = .s
 				vowelTarget.f1_list [.l] = -1
 				vowelTarget.f2_list [.l] = -1
+				vowelTarget.f3_list [.l] = -1
 				vowelTarget.t_list [.l] = -1
 				.l += 1			
 			endif
@@ -930,6 +935,7 @@ procedure dptrack .numPhonTargets .numChunks
 						.minDistance = distance [.t, .c]
 						vowelTarget.f1_list [.l] = f1_table[.t,.c]
 						vowelTarget.f2_list [.l] = f2_table[.t,.c]
+						vowelTarget.f3_list [.l] = -1
 						vowelTarget.t_list [.l] = t_table[.t,.c]
 					endif
 				endif
