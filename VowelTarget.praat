@@ -156,23 +156,25 @@ procedure plot_vowels .plot, .color$ .sp$ .sound .word$ .ipa$ .gendert$ .f1_targ
 	call select_vowel_target .sound .formants .syllableKernels
 	.vowelTier = select_vowel_target.vowelTier
 	.targetTier = select_vowel_target.targetTier
-	
-	if variableExists("sourceTextGrid") and sourceTextGrid > 0
-		selectObject: .syllableKernels
-		Remove
-		selectObject: sourceTextGrid
-		.syllableKernels = Copy: "SourceTextGrid"
-	elsif variableExists("sourceTextGrid") and .plot
-		selectObject: .sound
-		plusObject: .syllableKernels
-		Edit
-		pause 'sourceTextGridName$'
-		selectObject: .syllableKernels
-		.numTiers = Get number of tiers
-		for .t to .numTiers - 2
-			Remove tier: .numTiers + 1 - .t
-		endfor
-		Save as short text file: sourceTextGridName$
+
+	if variableExists("sourceTextGrid") 
+		if sourceTextGrid > 0
+			selectObject: .syllableKernels
+			Remove
+			selectObject: sourceTextGrid
+			.syllableKernels = Copy: "SourceTextGrid"
+		elsif .plot
+			selectObject: .sound
+			plusObject: .syllableKernels
+			Edit
+			pause 'sourceTextGridName$'
+			selectObject: .syllableKernels
+			.numTiers = Get number of tiers
+			for .t to .numTiers - 2
+				Remove tier: .numTiers + 1 - .t
+			endfor
+			Save as short text file: sourceTextGridName$
+		endif
 	endif
 	selectObject: .syllableKernels
 	.numSyllables = Get number of points: .targetTier
@@ -240,7 +242,9 @@ procedure plot_vowels .plot, .color$ .sp$ .sound .word$ .ipa$ .gendert$ .f1_targ
 		@dptrack: .numPhonTargets, .numChunks
 		@reorder_multi_targets
 	else
-		appendInfoLine: "@dptrack: ",.numPhonTargets, ", ", .numChunks
+		appendInfoLine: "Error: No data." 
+		appendInfoLine: "Number of phoneme targets - ",.numPhonTargets
+		appendInfoLine: "Number of vowel segments found - ", .numChunks
 	endif
 
 	# Actually plot the vowels
@@ -303,9 +307,7 @@ procedure plot_vowels .plot, .color$ .sp$ .sound .word$ .ipa$ .gendert$ .f1_targ
 		endfor
 		appendFileLine: outFile$, .word$, tab$, .ipa$, tab$, .sp$, tab$, .targetnum, tab$, .f1values$, tab$, .f2values$, tab$, .f3values$, tab$, .tvalues$
 	endif
-if .plot
-	pause '.ipa$'
-endif
+
 	selectObject: .downSampled, .formants, .syllableKernels
 	Remove
 endproc
@@ -960,21 +962,6 @@ endproc
 # 
 procedure reorder_multi_targets 
 		
-	appendInfoLine: "IPA: ", drawSourceVowelTarget.ipa$
-	appendInfoLine: "Unordered Targets: ", vowelTarget.list_length
-	for .i to vowelTarget.list_length
-		appendInfo: " ", vowelTarget.t_list [.i]
-	endfor
-	appendInfoLine: " "
-	for .i to vowelTarget.list_length
-		appendInfo: " ", vowelTarget.f1_list [.i]
-	endfor
-	appendInfoLine: " "
-	for .i to vowelTarget.list_length
-		appendInfo: " ", vowelTarget.f2_list [.i]
-	endfor
-	appendInfoLine: " "
-
 	# If phonemes are ordered wrong, determine correct targets.
 	# STILL HAS TO BE DONE!!!
 	for .i from 2 to vowelTarget.list_length
@@ -996,19 +983,4 @@ procedure reorder_multi_targets
 		endif
 	endfor
 	
-	
-	appendInfoLine: "Targets: ", vowelTarget.list_length
-	for .i to vowelTarget.list_length
-		appendInfo: " ", vowelTarget.t_list [.i]
-	endfor
-	appendInfoLine: " "
-	for .i to vowelTarget.list_length
-		appendInfo: " ", vowelTarget.f1_list [.i]
-	endfor
-	appendInfoLine: " "
-	for .i to vowelTarget.list_length
-		appendInfo: " ", vowelTarget.f2_list [.i]
-	endfor
-	appendInfoLine: " "
-	appendInfoLine: " "
 endproc

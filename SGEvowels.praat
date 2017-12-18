@@ -65,7 +65,7 @@ selectObject: .words
 .continue = 1
 beginPause: "Record a vowel"
 	comment: "Click on ""Record"" and start speaking"
-	choice: "You are a", 1
+	choice: "You are a", 2
 		option: "Female"
 		option: "Male"
 .clicked = endPause: "Stop", "Record", 2, 1
@@ -85,7 +85,6 @@ while .continue
 	call set_up_Canvas
 	@plot_voweltriangle_and_target: .words, .wordNumber
 	.word$ = plot_voweltriangle_and_target.word$
-	.char$ = plot_voweltriangle_and_target.char$
 	.ipa$ = plot_voweltriangle_and_target.ipa$
 	.gendert$ = plot_voweltriangle_and_target.gendert$
 	.f1_targets$ = plot_voweltriangle_and_target.f1_targets$
@@ -100,7 +99,7 @@ while .continue
 	endif
 	
 	# Write Title
-	demo Text special: 50, "Centre", 110, "Bottom", "Helvetica", 24, "0", .word$+" "+.char$
+	demo Text special: 50, "Centre", 110, "Bottom", "Helvetica", 24, "0", .word$+" ["+.ipa$+"]"
 		
 	# Record sound
 	if .testAudio and index_regex(.audio$, "\.(wav|mp3)$") and fileReadable(.audio$)

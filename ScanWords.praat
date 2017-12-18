@@ -57,7 +57,7 @@ for .f to .numFiles
 		call plot_vowel_triangle '.sp$'
 	
 		demo Black
-		demo Text special: 50, "Centre", 110, "Bottom", "Helvetica", 24, "0", .word$ + " /" + .ipa$ + "/"
+		demo Text special: 50, "Centre", 110, "Bottom", "Helvetica", 24, "0", .word$ + " [" + .ipa$ + "]"
 		demoShow()
 	endif
 	
