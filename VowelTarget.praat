@@ -28,11 +28,6 @@
 #
 vowelTarget.printlog = 1
 
-selectObject: .words
-Remove
-
-endproc
-
 procedure plot_voweltriangle_and_target .wordList .wordNumber
 	@initialize_table_collumns: .wordList, "Character$;Audio$;Gender$;IPA$;Gender$;F1$;F2$;F3$;", "-"
 	selectObject: .wordList
@@ -214,6 +209,7 @@ procedure plot_vowels .plot, .color$ .sp$ .sound .word$ .ipa$ .gendert$ .f1_targ
 				# Store distances
 				f1_table [.numPhonTargets, 1] = get_closest_vowels.f1_list [1]
 				f2_table [.numPhonTargets, 1] = get_closest_vowels.f2_list [1]
+				f3_table [.numPhonTargets, 1] = get_closest_vowels.f3_list [1]
 				t_table [.numPhonTargets, 1] = get_closest_vowels.t_list [1]
 				syllable [.numPhonTargets, 1] = .syllNum
 				distance [.numPhonTargets, 1] = get_closest_vowels.distance_list [1]
@@ -224,6 +220,7 @@ procedure plot_vowels .plot, .color$ .sp$ .sound .word$ .ipa$ .gendert$ .f1_targ
 					# Store distances
 					f1_table [.numPhonTargets, .i] = get_closest_vowels.f1_list [.i]
 					f2_table [.numPhonTargets, .i] = get_closest_vowels.f2_list [.i]
+					f3_table [.numPhonTargets, .i] = get_closest_vowels.f3_list [.i]
 					t_table [.numPhonTargets, .i] = get_closest_vowels.t_list [.i]
 					syllable [.numPhonTargets, .i] = .syllNum
 					distance [.numPhonTargets, .i] = get_closest_vowels.distance_list [.i]
@@ -306,6 +303,9 @@ procedure plot_vowels .plot, .color$ .sp$ .sound .word$ .ipa$ .gendert$ .f1_targ
 		endfor
 		appendFileLine: outFile$, .word$, tab$, .ipa$, tab$, .sp$, tab$, .targetnum, tab$, .f1values$, tab$, .f2values$, tab$, .f3values$, tab$, .tvalues$
 	endif
+if .plot
+	pause '.ipa$'
+endif
 	selectObject: .downSampled, .formants, .syllableKernels
 	Remove
 endproc
@@ -555,6 +555,7 @@ endproc
 procedure get_closest_vowels .sp$ .formants .textgrid .startT .gendert$ .f1_o .f2_o
 	.f1 = 0
 	.f2 = 0
+	.f3 = 0
 	.t = 0
 	.distance = 10000000
 	
@@ -843,7 +844,7 @@ procedure dptrack .numPhonTargets .numChunks
 						.minDistance = distance [.t, .c]
 						vowelTarget.f1_list [.l] = f1_table[.t,.c]
 						vowelTarget.f2_list [.l] = f2_table[.t,.c]
-						vowelTarget.f3_list [.l] = -1
+						vowelTarget.f3_list [.l] = f3_table[.t,.c]
 						vowelTarget.t_list [.l] = t_table[.t,.c]
 					endif
 				endif
@@ -935,7 +936,7 @@ procedure dptrack .numPhonTargets .numChunks
 						.minDistance = distance [.t, .c]
 						vowelTarget.f1_list [.l] = f1_table[.t,.c]
 						vowelTarget.f2_list [.l] = f2_table[.t,.c]
-						vowelTarget.f3_list [.l] = -1
+						vowelTarget.f3_list [.l] = f3_table[.t,.c]
 						vowelTarget.t_list [.l] = t_table[.t,.c]
 					endif
 				endif
