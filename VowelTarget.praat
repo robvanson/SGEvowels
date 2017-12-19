@@ -1007,11 +1007,42 @@ procedure reorder_multi_targets .sp$, .formants, .syllableKernels, .gendert$, .f
 			.start = Get start time of interval: 1, .interval1
 			.end = Get end time of interval: 1, .interval1
 			
+			
 			# Add a new tier with only a single interval
 			Insert interval tier: 1, "Vowel"
 			Insert boundary: 1, .start
 			Insert boundary: 1, .end
 			Set interval text: 1, 2, "Vowel"
+			
+			# Get targets
+			@extract_target_i: .f1_targets$, .i-1
+			.f1_value [1] = extract_target_i.value
+			@extract_target_i: .f2_targets$, .i-1
+			.f2_value [1] = extract_target_i.value
+			@extract_target_i: .f3_targets$, .i-1
+			.f3_value [1] = extract_target_i.value
+			
+			@extract_target_i: .f1_targets$, .i
+			.f1_value [2] = extract_target_i.value
+			@extract_target_i: .f2_targets$, .i
+			.f2_value [2] = extract_target_i.value
+			@extract_target_i: .f3_targets$, .i
+			.f3_value [2] = extract_target_i.value
+			
+			# Front to back
+			# Target 1
+			@get_closest_vowels: .sp$, .formants, .syllableKernels, .start, .gendert$, .f1_value[1], .f2_value[1]
+			.f2b_f1_list = get_closest_vowels.f1_list [1]
+			.f2b_f2_list = get_closest_vowels.f2_list [1]
+			.f3_list = get_closest_vowels.f3_list [1]
+			.f2b_t_list = get_closest_vowels.t_list [1]
+			# Back to front
+			# Target 2
+			@get_closest_vowels: .sp$, .formants, .syllableKernels, .start, .gendert$, .f1_value[2], .f2_value[2]
+			.b2f_f1_list = get_closest_vowels.f1_list [1]
+			.b2f_f2_list = get_closest_vowels.f2_list [1]
+			.f3_list = get_closest_vowels.f3_list [1]
+			.b2f_t_list = get_closest_vowels.t_list [1]
 			
 			# Find new targets for this chunk
 			.tmp = vowelTarget.f1_list [.i - 1]
