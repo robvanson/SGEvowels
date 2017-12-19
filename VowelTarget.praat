@@ -240,7 +240,7 @@ procedure plot_vowels .plot, .color$ .sp$ .sound .word$ .ipa$ .gendert$ .f1_targ
 	# Get the best trace of targets
 	if .numPhonTargets > 0 and .numChunks > 0
 		@dptrack: .numPhonTargets, .numChunks
-		@reorder_multi_targets
+		@reorder_multi_targets .sp$, .formants, .syllableKernels, .gendert$, .f1_targets$, .f2_targets$, .f3_targets$
 	else
 		appendInfoLine: "Error: No data." 
 		appendInfoLine: "Number of phoneme targets - ",.numPhonTargets
@@ -516,6 +516,35 @@ procedure extract_next_target .targets$
 	endif
 	.targets$ = replace_regex$(.targets$, "^([^;]*)(;|$)", "", 0)
 endproc
+
+procedure extract_target_i .targets$ .i
+	.tmp$ = .targets$
+	if .i > 1
+		.prev = .i - 1
+		.tmp$ = replace_regex$(.targets$, "^(\d+;){'.prev'}(.*)$", "\2", 0)
+	endif
+	.target$ = replace_regex$(.tmp$, "^(\d+)(;*.*)$", "\1", 0)
+	.value = number(.target$)
+	if .value = undefined
+		.value = -1
+	endif
+endproc
+
+procedure num_targets .targets$
+	.t = 0
+	.tmp$ = .targets$
+	while .tmp$ <> ""
+		if index(.tmp$, "^[^;]+;")
+			.t += 1
+			.tmp$ = replace_regex$(.tmp$, "^[^;]+;(.*)$", "\1", 0)
+		elsif index(.tmp$, "^\d+$")
+			.t += 1
+			.tmp$ = ""
+		else
+			.tmp$ = ""
+		endif
+	endwhile
+endif
 
 # Convert the frequencies to coordinates
 procedure vowel2point .sp$ .f1 .f2
@@ -960,7 +989,7 @@ endproc
 # vowelTarget.t_list, vowelTarget.f1_list, vowelTarget.f2_list
 # 
 # 
-procedure reorder_multi_targets 
+procedure reorder_multi_targets .sp$, .formants, .syllableKernels, .gendert$, .f1_targets$, .f2_targets$, .f3_targets$
 		
 	# If phonemes are ordered wrong, determine correct targets.
 	# STILL HAS TO BE DONE!!!
@@ -968,6 +997,22 @@ procedure reorder_multi_targets
 		.t1 = vowelTarget.t_list [.i - 1]
 		.t2 = vowelTarget.t_list [.i]
 		if .t1 > 0 and .t2 > 0 and .t1 > .t2
+			# Find chunks
+			selectObject: .syllableKernels
+			.interval1 = Get interval at time: 1, .t1
+			.interval2 = Get interval at time: 1, .t2
+			if .interval1 <> .interval2
+				printline ERROR: Chunks reordered! time - '.t1' vs '.t2', intervals - '.interval1' vs '.interval2'
+			endif
+			.start = Get start time of interval: 1, .interval1
+			.end = Get end time of interval: 1, .interval1
+			
+			# Add a new tier with only a single interval
+			Insert interval tier: 1, "Vowel"
+			Insert boundary: 1, .start
+			Insert boundary: 1, .end
+			Set interval text: 1, 2, "Vowel"
+			
 			# Find new targets for this chunk
 			.tmp = vowelTarget.f1_list [.i - 1]
 			vowelTarget.f1_list [.i - 1] = vowelTarget.f1_list [.i]
@@ -984,3 +1029,5 @@ procedure reorder_multi_targets
 	endfor
 	
 endproc
+
+procedure 
