@@ -62,8 +62,12 @@ for .f to .numFiles
 	endif
 	
 	@drawSourceVowelTarget: plot, .audioList, .f, .sp$, .sound
-pause
+#pause
 	selectObject: .sound
+	if sourceTextGrid > -1
+		plusObject: sourceTextGrid
+		sourceTextGrid = -1
+	endif
 	Remove
 endfor
 selectObject: .audioList

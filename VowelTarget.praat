@@ -1072,11 +1072,13 @@ procedure reorder_multi_targets .sp$, .formants, .syllableKernels, .gendert$, .f
 			# Change boundary
 			# Front to back
 			# Add a new tier with only a single interval
+
 			selectObject: .syllableKernels
 			Insert interval tier: 1, "Vowel"
 			Insert boundary: 1, .f2b_t_list [1]
 			Insert boundary: 1, .end
 			Set interval text: 1, 2, "Vowel"
+
 			# Target 2
 			@get_closest_vowels: .sp$, .formants, .syllableKernels, .start, .gendert$, .f1_value[2], .f2_value[2]
 			.f2b_f1_list [2] = get_closest_vowels.f1_list [1]
@@ -1093,8 +1095,9 @@ procedure reorder_multi_targets .sp$, .formants, .syllableKernels, .gendert$, .f
 			selectObject: .syllableKernels
 			Insert interval tier: 1, "Vowel"
 			Insert boundary: 1, .start
-			Insert boundary: 1, .f2b_t_list [2]
+			Insert boundary: 1, .b2f_t_list [2]
 			Set interval text: 1, 2, "Vowel"
+
 			# Target 1
 			@get_closest_vowels: .sp$, .formants, .syllableKernels, .start, .gendert$, .f1_value[1], .f2_value[1]
 			.b2f_f1_list [1] = get_closest_vowels.f1_list [1]
@@ -1130,7 +1133,6 @@ procedure reorder_multi_targets .sp$, .formants, .syllableKernels, .gendert$, .f
 				vowelTarget.f3_list [.i] = .b2f_f3_list [2]
 				vowelTarget.t_list [.i] = .b2f_t_list [2]
 			endif
-			
 			# Remove temporary tier
 			selectObject: .syllableKernels
 			Remove tier: 1
