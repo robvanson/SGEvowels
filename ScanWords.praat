@@ -9,7 +9,7 @@ call CreateEN_US_IPA
 sge.en_usIPA = selected("Table") 
 
 form Source directiory
-	sentence Source EN_US_wordlist.tsv
+	sentence Source Data/EN_US_wordlist.tsv
 	choice Speaker_is_a 2
 		option Female
 		option Male

@@ -147,10 +147,10 @@ procedure plot_vowels .plot, .color$ .sp$ .sound .word$ .ipa$ .gendert$ .f1_targ
 	selectObject: .sound
 	if .sp$ = "M"
 		.downSampled = Resample: 10000, 50
-		.formants = noprogress To Formant (sl): 0, 5, 5000, 0.025, 50
+		.formants = noprogress To Formant (sl): 0, 5, 5000, 0.05, 50
 	else
 		.downSampled = Resample: 11000, 50
-		.formants = noprogress To Formant (sl): 0, 5, 5500, 0.025, 50
+		.formants = noprogress To Formant (sl): 0, 5, 5500, 0.05, 50
 	endif
 
 	call select_vowel_target .sound .formants .syllableKernels
@@ -184,16 +184,19 @@ procedure plot_vowels .plot, .color$ .sp$ .sound .word$ .ipa$ .gendert$ .f1_targ
 	.syllNum = 1
 	.lastSyllable = 0
 	.numChunks = 0
-	while .f1_targets$ <> ""
-		@extract_next_target: .f1_targets$
+	.temp_f1_targets$ = .f1_targets$
+	.temp_f2_targets$ = .f2_targets$
+	.temp_f3_targets$ = .f3_targets$
+	while .temp_f1_targets$ <> ""
+		@extract_next_target: .temp_f1_targets$
 		.f1 = extract_next_target.value
-		.f1_targets$ = extract_next_target.targets$
-		@extract_next_target: .f2_targets$
+		.temp_f1_targets$ = extract_next_target.targets$
+		@extract_next_target: .temp_f2_targets$
 		.f2 = extract_next_target.value
-		.f2_targets$ = extract_next_target.targets$
-		@extract_next_target: .f3_targets$
+		.temp_f2_targets$ = extract_next_target.targets$
+		@extract_next_target: .temp_f3_targets$
 		.f3 = extract_next_target.value
-		.f3_targets$ = extract_next_target.targets$
+		.temp_f3_targets$ = extract_next_target.targets$
 				
 		# Catch syllable boundaries
 		if .f1 > 0
@@ -240,7 +243,7 @@ procedure plot_vowels .plot, .color$ .sp$ .sound .word$ .ipa$ .gendert$ .f1_targ
 	# Get the best trace of targets
 	if .numPhonTargets > 0 and .numChunks > 0
 		@dptrack: .numPhonTargets, .numChunks
-		@reorder_multi_targets .sp$, .formants, .syllableKernels, .gendert$, .f1_targets$, .f2_targets$, .f3_targets$
+		@reorder_multi_targets: .sp$, .formants, .syllableKernels, .gendert$, .f1_targets$, .f2_targets$, .f3_targets$
 	else
 		appendInfoLine: "Error: No data." 
 		appendInfoLine: "Number of phoneme targets - ",.numPhonTargets
@@ -1009,6 +1012,7 @@ procedure reorder_multi_targets .sp$, .formants, .syllableKernels, .gendert$, .f
 			
 			
 			# Add a new tier with only a single interval
+			selectObject: .syllableKernels
 			Insert interval tier: 1, "Vowel"
 			Insert boundary: 1, .start
 			Insert boundary: 1, .end
@@ -1029,36 +1033,108 @@ procedure reorder_multi_targets .sp$, .formants, .syllableKernels, .gendert$, .f
 			@extract_target_i: .f3_targets$, .i
 			.f3_value [2] = extract_target_i.value
 			
+			############################################################
+			# 
+			# Compare two orders of finding the two targets in the same
+			# chunk:
+			# 1) Find the closest approach to the first target, then
+			#    find the second target after the first
+			# 2) Find the closest approach to the second target, then
+			#    find the first target *before* the second
+			# 
+			# Compare the combined squared distances. Take the smallest
+			# 
+			############################################################
+			
+			# STEP 1: Find the closest approach in the chunk
+			
 			# Front to back
 			# Target 1
 			@get_closest_vowels: .sp$, .formants, .syllableKernels, .start, .gendert$, .f1_value[1], .f2_value[1]
-			.f2b_f1_list = get_closest_vowels.f1_list [1]
-			.f2b_f2_list = get_closest_vowels.f2_list [1]
-			.f3_list = get_closest_vowels.f3_list [1]
-			.f2b_t_list = get_closest_vowels.t_list [1]
+			.f2b_f1_list [1] = get_closest_vowels.f1_list [1]
+			.f2b_f2_list [1] = get_closest_vowels.f2_list [1]
+			.f2b_f3_list [1] = get_closest_vowels.f3_list [1]
+			.f2b_t_list [1] = get_closest_vowels.t_list [1]
+			.f2b_distance [1] = get_closest_vowels.distance_list [1]
+
+			
 			# Back to front
 			# Target 2
 			@get_closest_vowels: .sp$, .formants, .syllableKernels, .start, .gendert$, .f1_value[2], .f2_value[2]
-			.b2f_f1_list = get_closest_vowels.f1_list [1]
-			.b2f_f2_list = get_closest_vowels.f2_list [1]
-			.f3_list = get_closest_vowels.f3_list [1]
-			.b2f_t_list = get_closest_vowels.t_list [1]
+			.b2f_f1_list [2] = get_closest_vowels.f1_list [1]
+			.b2f_f2_list [2] = get_closest_vowels.f2_list [1]
+			.b2f_f3_list [2] = get_closest_vowels.f3_list [1]
+			.b2f_t_list [2] = get_closest_vowels.t_list [1]
+			.b2f_distance [2] = get_closest_vowels.distance_list [1]
+
+			# STEP 2: Find the closest approach in the remainder of the chunk
 			
-			# Find new targets for this chunk
-			.tmp = vowelTarget.f1_list [.i - 1]
-			vowelTarget.f1_list [.i - 1] = vowelTarget.f1_list [.i]
-			vowelTarget.f1_list [.i] = .tmp
+			# Change boundary
+			# Front to back
+			# Add a new tier with only a single interval
+			selectObject: .syllableKernels
+			Insert interval tier: 1, "Vowel"
+			Insert boundary: 1, .f2b_t_list [1]
+			Insert boundary: 1, .end
+			Set interval text: 1, 2, "Vowel"
+			# Target 2
+			@get_closest_vowels: .sp$, .formants, .syllableKernels, .start, .gendert$, .f1_value[2], .f2_value[2]
+			.f2b_f1_list [2] = get_closest_vowels.f1_list [1]
+			.f2b_f2_list [2] = get_closest_vowels.f2_list [1]
+			.f2b_f3_list [2] = get_closest_vowels.f3_list [1]
+			.f2b_t_list [2] = get_closest_vowels.t_list [1]
+			.f2b_distance [2] = get_closest_vowels.distance_list [1]
+			# Remove temporary tier
+			selectObject: .syllableKernels
+			Remove tier: 1
 			
-			.tmp = vowelTarget.f2_list [.i - 1]
-			vowelTarget.f2_list [.i - 1] = vowelTarget.f2_list [.i]
-			vowelTarget.f2_list [.i] = .tmp
+			# Back to front
+			# Add a new tier with only a single interval
+			selectObject: .syllableKernels
+			Insert interval tier: 1, "Vowel"
+			Insert boundary: 1, .start
+			Insert boundary: 1, .f2b_t_list [2]
+			Set interval text: 1, 2, "Vowel"
+			# Target 1
+			@get_closest_vowels: .sp$, .formants, .syllableKernels, .start, .gendert$, .f1_value[1], .f2_value[1]
+			.b2f_f1_list [1] = get_closest_vowels.f1_list [1]
+			.b2f_f2_list [1] = get_closest_vowels.f2_list [1]
+			.b2f_f3_list [1] = get_closest_vowels.f3_list [1]
+			.b2f_t_list [1] = get_closest_vowels.t_list [1]
+			.b2f_distance [1] = get_closest_vowels.distance_list [1]
+			# Remove temporary tier
+			selectObject: .syllableKernels
+			Remove tier: 1
+
+			# Compare and assign
+			.f2b_distanceSQ = .f2b_distance [1] ** 2 + .f2b_distance [2] ** 2
+			.b2f_distanceSQ = .b2f_distance [1] ** 2 + .b2f_distance [2] ** 2
+			if  .f2b_distanceSQ <= .b2f_distanceSQ
+				vowelTarget.f1_list [.i - 1] = .f2b_f1_list [1]
+				vowelTarget.f2_list [.i - 1] = .f2b_f2_list [1]
+				vowelTarget.f3_list [.i - 1] = .f2b_f3_list [1]
+				vowelTarget.t_list [.i - 1] = .f2b_t_list [1]
+				
+				vowelTarget.f1_list [.i] = .f2b_f1_list [2]
+				vowelTarget.f2_list [.i] = .f2b_f2_list [2]
+				vowelTarget.f3_list [.i] = .f2b_f3_list [2]
+				vowelTarget.t_list [.i] = .f2b_t_list [2]
+			else
+				vowelTarget.f1_list [.i - 1] = .b2f_f1_list [1]
+				vowelTarget.f2_list [.i - 1] = .b2f_f2_list [1]
+				vowelTarget.f3_list [.i - 1] = .b2f_f3_list [1]
+				vowelTarget.t_list [.i - 1] = .b2f_t_list [1]
+				
+				vowelTarget.f1_list [.i] = .b2f_f1_list [2]
+				vowelTarget.f2_list [.i] = .b2f_f2_list [2]
+				vowelTarget.f3_list [.i] = .b2f_f3_list [2]
+				vowelTarget.t_list [.i] = .b2f_t_list [2]
+			endif
 			
-			.tmp = vowelTarget.t_list [.i - 1]
-			vowelTarget.t_list [.i - 1] = vowelTarget.t_list [.i]
-			vowelTarget.t_list [.i] = .tmp
+			# Remove temporary tier
+			selectObject: .syllableKernels
+			Remove tier: 1
 		endif
 	endfor
 	
 endproc
-
-procedure 
