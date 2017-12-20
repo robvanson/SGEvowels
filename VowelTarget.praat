@@ -245,9 +245,10 @@ procedure plot_vowels .plot, .color$ .sp$ .sound .word$ .ipa$ .gendert$ .f1_targ
 		@dptrack: .numPhonTargets, .numChunks
 		@reorder_multi_targets: .sp$, .formants, .syllableKernels, .gendert$, .f1_targets$, .f2_targets$, .f3_targets$
 	else
-		appendInfoLine: "Error: No data." 
+		appendInfoLine: "Error: '.word$' ['.ipa$'] No data." 
 		appendInfoLine: "Number of phoneme targets - ",.numPhonTargets
 		appendInfoLine: "Number of vowel segments found - ", .numChunks
+		appendFileLine: outFile$, .word$, tab$, .ipa$, tab$, .sp$, tab$, .targetnum, tab$, "-", tab$, "-", tab$, "-", tab$, "-"
 	endif
 
 	# Actually plot the vowels
@@ -1002,13 +1003,28 @@ procedure reorder_multi_targets .sp$, .formants, .syllableKernels, .gendert$, .f
 		if .t1 > 0 and .t2 > 0 and .t1 > .t2
 			# Find chunks
 			selectObject: .syllableKernels
-			.interval1 = Get interval at time: 1, .t1
-			.interval2 = Get interval at time: 1, .t2
+			.numIntervals = Get number of intervals: 1
+			# Remember, times are wrong!
+			.interval1 = Get interval at time: 1, .t2
+			.interval2 = Get interval at time: 1, .t1
+			# Make sure the target is inside the Vowel chunks
 			if .interval1 <> .interval2
-				printline ERROR: Chunks reordered! time - '.t1' vs '.t2', intervals - '.interval1' vs '.interval2'
+				.lab$ = Get label of interval: 1, .interval1
+				while .lab$ <> "Vowel" and .interval1 < .numIntervals
+					.interval1 += 1
+					.lab$ = Get label of interval: 1, .interval1
+				endwhile
+				.start = Get start time of interval: 1, .interval1
+				.lab$ = Get label of interval: 1, .interval2
+				while .lab$ <> "Vowel" and .interval2 > 1
+					.interval2 -= 1
+					.lab$ = Get label of interval: 1, .interval2
+				endwhile
+				.end = Get end time of interval: 1, .interval2
+			else
+				.start = Get start time of interval: 1, .interval1
+				.end = Get end time of interval: 1, .interval1
 			endif
-			.start = Get start time of interval: 1, .interval1
-			.end = Get end time of interval: 1, .interval1
 			
 			
 			# Add a new tier with only a single interval
@@ -1054,7 +1070,11 @@ procedure reorder_multi_targets .sp$, .formants, .syllableKernels, .gendert$, .f
 			.f2b_f1_list [1] = get_closest_vowels.f1_list [1]
 			.f2b_f2_list [1] = get_closest_vowels.f2_list [1]
 			.f2b_f3_list [1] = get_closest_vowels.f3_list [1]
-			.f2b_t_list [1] = get_closest_vowels.t_list [1]
+			if get_closest_vowels.t_list [1] < .end - 0.01
+				.f2b_t_list [1] = get_closest_vowels.t_list [1]
+			else
+				.f2b_t_list [1] = .end - 0.01
+			endif
 			.f2b_distance [1] = get_closest_vowels.distance_list [1]
 
 			
@@ -1064,7 +1084,11 @@ procedure reorder_multi_targets .sp$, .formants, .syllableKernels, .gendert$, .f
 			.b2f_f1_list [2] = get_closest_vowels.f1_list [1]
 			.b2f_f2_list [2] = get_closest_vowels.f2_list [1]
 			.b2f_f3_list [2] = get_closest_vowels.f3_list [1]
-			.b2f_t_list [2] = get_closest_vowels.t_list [1]
+			if get_closest_vowels.t_list [1] > .start + 0.01
+				.b2f_t_list [2] = get_closest_vowels.t_list [1]
+			else
+				.b2f_t_list [2] = .start + 0.01
+			endif
 			.b2f_distance [2] = get_closest_vowels.distance_list [1]
 
 			# STEP 2: Find the closest approach in the remainder of the chunk
